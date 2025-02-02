@@ -1,0 +1,5 @@
+Dataset Source: https://divvy-tripdata.s3.amazonaws.com/index.html
+Dataset Used:  202401-divvy-tripdata.zip (Feb 5th 2024) - 202412-divvy-tripdata.zip (Jan 6th 2025)
+Columns: ride_id, rideable_type, started_at, ended_at, start_station_name, start_station_id, end_station_name, end_station_id, start_lat, start_lng, end_lat, end_lng, member_casual
+Columns used: rideable_type, started_at, ended_at, start_lat, start_lng, end_lat, end_lng, member_casual
+Reason for Exclusion: File size too large to upload.
