@@ -1,0 +1,219 @@
+Step 1: Data Import & Schema Validation
+Actions Taken:
+	•	Downloaded 12 months of data from Motivate International Inc.. 
+	•	Created a Google Cloud Storage bucket for large file handling. 
+	•	Imported datasets into BigQuery. 
+	•	Checked schema consistency across all tables. 
+SQL Queries Used:
+-- Inspect the first 10 rows to understand the structure
+SELECT *
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+LIMIT 10;
+
+-- Verify column names and data types across tables
+SELECT table_name, column_name, data_type
+FROM `your_project.INFORMATION_SCHEMA.COLUMNS`
+WHERE table_schema = 'your_dataset';
+
+Purpose: Ensure column names & data types are consistent across months.
+
+
+
+
+Step 2: Refining the Dataset for Analysis
+
+Action Taken:
+	•	While working on my visualizations, I realized that I should have been more intentional about selecting only the columns needed to answer my business question. 
+	•	I went back and removed unnecessary columns to create a cleaned dataset specifically for my analysis. 
+	•	This step improved efficiency in SQL queries and reduced the dataset size for Tableau. 
+	•	Key learning: Before starting analysis, ask: "What data do I actually need to answer my root question?" 
+Columns in the Original Dataset (Before Cleaning):
+ride_id, rideable_type, started_at, ended_at, start_station_name, start_station_id, 
+end_station_name, end_station_id, start_lat, start_lng, end_lat, end_lng, member_casual
+
+Columns Retained for Analysis:
+rideable_type, started_at, ended_at, start_lat, start_lng, end_lat, end_lng, member_casual
+
+SQL Query Used to Select Relevant Fields and Create a Cleaned Dataset:
+CREATE TABLE `friendly-legacy-447307-b0.cyclistic_feb24_jan25..cleaned_cyclistic_data` AS
+SELECT 
+  rideable_type, 
+  started_at, 
+  ended_at, 
+  start_lat, 
+  start_lng, 
+  end_lat, 
+  end_lng, 
+  member_casual
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25..cyclistic_full_year`;
+
+Purpose:
+	•	This query creates a new table with only the columns necessary for analysis, excluding unnecessary fields that would not contribute to answering the business question. 
+	•	The cleaned dataset was used for all further SQL analysis and Tableau visualizations. 
+
+
+
+
+ Step 3: Checking for Missing Data
+Actions Taken:
+	•	Checked for null values in key columns (start_station_name, end_station_name, rideable_type, member_casual). 
+	•	Found 18-23% missing data in start_station_name and end_station_name, with casual riders having higher missing values. 
+	•	Identified September as the month with the highest percentage of missing values (23.49%). 
+SQL Queries Used:
+-- Calculate the percentage of missing values for start & end stations
+SELECT 
+  COUNT(*) AS total_rows,
+  COUNT(start_station_name) AS non_null_start_station_name,
+  COUNT(*) - COUNT(start_station_name) AS null_start_station_name,
+  ROUND((COUNT(*) - COUNT(start_station_name)) / COUNT(*) * 100, 2) AS null_percentage_start_station,
+  COUNT(end_station_name) AS non_null_end_station_name,
+  COUNT(*) - COUNT(end_station_name) AS null_end_station_name,
+  ROUND((COUNT(*) - COUNT(end_station_name)) / COUNT(*) * 100, 2) AS null_percentage_end_station
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`;
+
+
+-- Compare missing data percentages between casual and member riders
+SELECT 
+  member_casual,
+  COUNT(*) AS total_rows,
+  COUNT(start_station_name) AS non_null_start_station_name,
+  COUNT(*) - COUNT(start_station_name) AS null_start_station_name,
+  ROUND((COUNT(*) - COUNT(start_station_name)) / COUNT(*) * 100, 2) AS null_percentage_start_station
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY member_casual;
+
+-- Identify the month with the highest missing values
+SELECT 
+  EXTRACT(MONTH FROM started_at) AS ride_month,
+  COUNT(*) AS total_rides,
+  COUNT(start_station_name) AS non_null_start_station_name,
+  COUNT(*) - COUNT(start_station_name) AS null_start_station_name,
+  ROUND((COUNT(*) - COUNT(start_station_name)) / COUNT(*) * 100, 2) AS null_percentage_start_station,
+  COUNT(end_station_name) AS non_null_end_station_name,
+  COUNT(*) - COUNT(end_station_name) AS null_end_station_name,
+  ROUND((COUNT(*) - COUNT(end_station_name)) / COUNT(*) * 100, 2) AS null_percentage_end_station
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_month
+ORDER BY ride_month;
+
+Insights:
+	•	Casual riders have more missing station names than members. 
+	•	September has the highest missing start & end station data (23.49%). 
+
+
+Step 4: Identifying Duplicates
+
+Actions Taken:
+	•	Checked if ride_id or rider_id had duplicates. 
+	•	Verified that casual riders don’t retain the same ID, meaning repeat casual users cannot be tracked. 
+SQL Queries Used:
+-- Check for duplicate ride IDs
+SELECT ride_id, COUNT(*) 
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_id
+HAVING COUNT(*) > 1;
+
+-- Check if casual riders reuse the same rider ID
+SELECT rider_id, COUNT(*)
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE member_casual = 'casual'
+GROUP BY rider_id
+HAVING COUNT(*) > 1;
+Insights:
+	•	Casual riders do not reuse IDs, confirming they are one-time identifiers. 
+	•	This means we cannot track repeat casual users without a membership system. 
+
+
+
+Step 5: Analyzing Ride Distribution
+Actions Taken:
+	•	Found total rides by membership type. 
+	•	Analyzed ride distribution by ride type (classic, electric, scooter). 
+	•	Discovered casual riders use scooters 2.5x more than members. 
+SQL Queries Used:
+-- Count total rides per user type
+SELECT 
+  member_casual, 
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY member_casual;
+
+-- Count each ride type (bike, electric, scooter)
+SELECT 
+  rideable_type, 
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY rideable_type;
+
+-- Compare ride type preferences between casual & members
+SELECT 
+  member_casual,
+  rideable_type,
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY member_casual, rideable_type
+ORDER BY member_casual, total_rides DESC;
+Insights:
+	•	Casual riders prefer electric bikes (50.73%) & scooters (3.97%) more than members. 
+	•	Members use electric bikes (50.93%) & classic bikes (47.48%) the most. 
+
+
+
+Step 6: Time-Based Analysis
+Actions Taken:
+	•	Identified peak ride hours for casuals vs. members. 
+	•	Found casual riders use bikes mid-day, while members ride during commuting hours. 
+SQL Queries Used:
+-- Identify hourly ride trends
+SELECT 
+  EXTRACT(HOUR FROM started_at) AS ride_hour,
+  member_casual,
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_hour, member_casual
+ORDER BY ride_hour;
+
+-- Find weekly ride trends
+SELECT 
+  EXTRACT(DAYOFWEEK FROM started_at) AS ride_day,
+  member_casual,
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_day, member_casual
+ORDER BY ride_day;
+Insights:
+	•	Members ride during commuting hours (7 AM - 7 PM). 
+	•	Casual riders ride mid-day (10 AM - 8 PM). 
+
+
+
+Step 7: Geographic Analysis (Start & End Locations)
+Actions Taken:
+	•	Found most popular start & end locations for casuals vs. members. 
+	•	Attempted to match missing station names using lat/lng. 
+SQL Queries Used:
+-- Find most popular start stations
+SELECT 
+  start_station_name, 
+  member_casual, 
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE start_station_name IS NOT NULL
+GROUP BY start_station_name, member_casual
+ORDER BY total_rides DESC
+LIMIT 10;
+
+-- Find most popular end stations
+SELECT 
+  end_station_name, 
+  member_casual, 
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE end_station_name IS NOT NULL
+GROUP BY end_station_name, member_casual
+ORDER BY total_rides DESC
+LIMIT 10;
+Insights:
+	•	Casual riders: Most popular start location → Streeter Dr & Grand Ave (2.93%). 
+	•	Members: Most popular start location → Kingsbury St & Kinzie St (2.93%). 
+

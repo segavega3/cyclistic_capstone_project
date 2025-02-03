@@ -1,0 +1,207 @@
+Process Phase: Data Transformation & Analysis
+Goal: Cleaning, transforming, and analyzing the data to uncover key business insights.
+
+Step 1: Handling Missing Data
+Action Taken:
+	•	Identified 18-23% missing values in start_station_name and end_station_name. 
+	•	Determined casual riders had more missing values than members. 
+	•	Attempted lat/lng matching to fill missing station names but abandoned due to inconsistencies. 
+SQL Queries Used:
+SELECT 
+  COUNT(*) AS total_rows,
+  COUNT(start_station_name) AS non_null_start_station_name,
+  COUNT(*) - COUNT(start_station_name) AS null_start_station_name,
+  ROUND((COUNT(*) - COUNT(start_station_name)) / COUNT(*) * 100, 2) AS 
+null_percentage
+FROM
+ `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`;
+Purpose: Quantify missing data in start_station_name. 
+
+
+SELECT 
+  member_casual,
+  COUNT(*) AS total_rows,
+  COUNT(start_station_name) AS non_null_start_station_name,
+  COUNT(*) - COUNT(start_station_name) AS null_start_station_name,
+  ROUND((COUNT(*) - COUNT(start_station_name)) / COUNT(*) * 100, 2) AS 
+null_percentage
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY member_casual;
+Purpose: Compare missing data percentages between casual and member riders.
+
+
+
+Step 2: Removing Duplicates
+ Action Taken:
+	•	Checked for duplicate ride_id values. 
+	•	Verified that rider_id is unique per trip, meaning casual riders cannot be tracked across multiple trips. 
+SQL Queries Used:
+SELECT ride_id, COUNT(*) 
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_id
+HAVING COUNT(*) > 1;
+Purpose: Check for duplicate ride_id values.
+
+
+
+SELECT rider_id, COUNT(*)
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE member_casual = 'casual'
+GROUP BY rider_id
+HAVING COUNT(*) > 1;
+Purpose: Check if casual riders reuse the same rider_id (they don’t).
+
+
+
+Step 3: Formatting Timestamps & Calculating Ride Duration
+Action Taken:
+	•	Extracted day, week, and month from timestamps. 
+	•	Calculated ride duration for all users. 
+SQL Queries Used:
+SELECT 
+  ride_id, 
+  started_at, 
+  ended_at, 
+  TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS ride_duration
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) > 0;
+Purpose: Calculate ride duration in minutes.
+
+
+
+SELECT 
+  EXTRACT(HOUR FROM started_at) AS ride_hour,
+  member_casual,
+  COUNT(*) AS total_rides
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_hour, member_casual
+ORDER BY ride_hour;
+ Purpose: Identify peak usage times by hour.
+
+
+
+SELECT 
+  EXTRACT(DAYOFWEEK FROM started_at) AS ride_day,
+  member_casual,
+  COUNT(*) AS total_rides
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_day, member_casual
+ORDER BY ride_day;
+Purpose: Analyze weekly ride patterns.
+
+
+
+SELECT 
+  EXTRACT(MONTH FROM started_at) AS ride_month,
+  member_casual,
+  COUNT(*) AS total_rides
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY ride_month, member_casual
+ORDER BY ride_month;
+Purpose: Analyze monthly ride trends.
+
+
+
+Step 4: Ride Type Preferences (Classic vs. Electric vs. Scooter)
+Action Taken:
+	•	Discovered that casual riders use scooters 2.5x more than members. 
+	•	Found that electric bikes are the most popular ride type for both groups. 
+SQL Queries Used:
+SELECT 
+  rideable_type, 
+  COUNT(*) AS total_rides
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY rideable_type;
+Purpose: Count each ride type (classic, electric, scooter).
+
+
+SELECT 
+  member_casual,
+  rideable_type,
+  COUNT(*) AS total_rides
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+GROUP BY member_casual, rideable_type
+ORDER BY member_casual, total_rides DESC;
+Purpose: Compare ride type preferences for casuals vs. members.
+
+
+
+Step 5: Identifying Popular Start & End Locations
+Action Taken:
+	•	Found top 10 most-used start locations for casuals and members. 
+	•	Found top 10 most-used end locations. 
+SQL Queries Used:
+
+SELECT 
+  start_station_name, 
+  member_casual, 
+  COUNT(*) AS total_rides
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE start_station_name IS NOT NULL
+GROUP BY start_station_name, member_casual
+ORDER BY total_rides DESC
+LIMIT 10;
+Purpose: Identify most frequently used start stations.
+
+
+
+SELECT 
+  end_station_name, 
+  member_casual, 
+  COUNT(*) AS total_rides
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE end_station_name IS NOT NULL
+GROUP BY end_station_name, member_casual
+ORDER BY total_rides DESC
+LIMIT 10;
+Purpose: Identify most frequently used end stations.
+
+
+Step 6: Clustering Start/End Locations into Zones
+Action Taken:
+	•	Created 100 most popular start & end zones for casuals and members based on latitude/longitude. 
+	•	Used heatmaps in Tableau to visualize the zones. 
+SQL Queries Used:
+SELECT 
+  ROUND(start_lat, 2) AS zone_lat,
+  ROUND(start_lng, 2) AS zone_lng,
+  COUNT(*) AS total_rides,
+  'Casual_Start' AS zone_type
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE member_casual = 'casual'
+GROUP BY zone_lat, zone_lng
+ORDER BY total_rides DESC
+LIMIT 100
+UNION ALL
+SELECT 
+  ROUND(start_lat, 2) AS zone_lat,
+  ROUND(start_lng, 2) AS zone_lng,
+  COUNT(*) AS total_rides,
+  'Member_Start' AS zone_type
+FROM 
+`friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
+WHERE member_casual = 'member'
+GROUP BY zone_lat, zone_lng
+ORDER BY total_rides DESC
+LIMIT 100;
+Purpose: Group locations into zones for visualization.
+
+
+Summary of the Process Phase
+	•	Handled missing values & duplicates 
+	•	Formatted timestamps & calculated ride duration 
+	•	Analyzed ride type preferences (classic, electric, scooter) 
+	•	Identified peak ride times (hourly, weekly, monthly) 
+	•	Found the most popular start & end stations 
+	•	Created a zone-based analysis for geographic insights 
