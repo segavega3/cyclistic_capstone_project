@@ -16,7 +16,9 @@ Cyclistic, a bike-share company, aims to increase annual memberships because mem
 Key Business Questions:
 
 1️. How do annual members and casual riders use Cyclistic bikes differently?
+
 2️. What factors influence casual riders to convert to annual memberships?
+
 3️. How can Cyclistic use data-driven strategies to increase memberships?
 
 Business Impact: 
