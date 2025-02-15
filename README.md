@@ -2,7 +2,9 @@ Cyclistic Capstone Project: Analyzing Member vs. Casual Rider Behavior
 Google Data Analytics Professional Certificate Capstone
 
 -Goal: Identify key differences between casual riders and annual members to develop data-driven marketing strategies for converting casual riders into members.
+
 -Tools Used: SQL (BigQuery), Tableau
+
 -Skills Demonstrated: Data cleaning, SQL querying, data visualization, storytelling, business insights
 
 
