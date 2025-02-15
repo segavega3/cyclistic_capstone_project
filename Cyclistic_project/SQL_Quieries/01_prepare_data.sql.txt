@@ -12,7 +12,7 @@ LIMIT 10;
 
 -- Verify column names and data types across tables
 SELECT table_name, column_name, data_type
-FROM `your_project.INFORMATION_SCHEMA.COLUMNS`
+FROM `friendly-legacy-447307-b0.cyclistic_feb24_jan25.cyclistic_full_year`
 WHERE table_schema = 'your_dataset';
 
 Purpose: Ensure column names & data types are consistent across months.
