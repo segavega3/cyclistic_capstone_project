@@ -1,28 +1,34 @@
 Cyclistic Capstone Project: Analyzing Member vs. Casual Rider Behavior
 Google Data Analytics Professional Certificate Capstone
 
--Goal: Identify key differences between casual riders and annual members to develop data-driven marketing strategies for converting casual riders into members.
+Goal: 
+Identify key differences between casual riders and annual members to develop data-driven marketing strategies for converting casual riders into members.
 
--Tools Used: SQL (BigQuery), Tableau
+Tools Used: SQL (BigQuery), Tableau
 
--Skills Demonstrated: Data cleaning, SQL querying, data visualization, storytelling, business insights
+Skills Demonstrated: Data cleaning, SQL querying, data visualization, storytelling, business insights
 
 
 Business Problem
+
 Cyclistic, a bike-share company, aims to increase annual memberships because members provide higher long-term value than casual riders. The marketing team wants to understand how these two user groups behave differently.
 
 Key Business Questions:
+
 1️. How do annual members and casual riders use Cyclistic bikes differently?
 2️. What factors influence casual riders to convert to annual memberships?
 3️. How can Cyclistic use data-driven strategies to increase memberships?
 
-Business Impact: The insights from this analysis will be used to optimize marketing campaigns, adjust pricing strategies, and improve user experience.
+Business Impact: 
+The insights from this analysis will be used to optimize marketing campaigns, adjust pricing strategies, and improve user experience.
 
 Data Source
+
 The dataset comes from Motivate International Inc. and is publicly available:
 🔗 Divvy Trip Data (Cyclistic)--- NEEDS LINK
 
 Data Overview:
+
 Time Range: February 2024 - January 2025
 
 Original Columns:ride_id, rideable_type, started_at, ended_at, start_station_name, start_station_id,
@@ -30,22 +36,25 @@ end_station_name, end_station_id, start_lat, start_lng, end_lat, end_lng, member
 
 Columns Used (After Cleaning & Filtering):rideable_type, started_at, ended_at, start_lat, start_lng, end_lat, end_lng, member_casual
 
-Final Processed Dataset: A cleaned dataset was created for analysis & visualization.
+Final Processed Dataset: 
+A cleaned dataset was created for analysis & visualization.
 Raw Data & Cleaning Steps: SQL Files--- NEEDS LINK
 
 Data Cleaning & Preparation
 
 Key Actions Taken in the Prepare Phase:
+
 - Schema validation across 12 months of data
 - Filtered dataset to keep only relevant columns
 - Checked for missing values (found 18-23% missing station data)
 - Verified duplicates (confirmed unique ride IDs)
 - Created a cleaned dataset for visualization
-- 
+  
 SQL Queries Used: View SQL File
 
 
 Key Findings & Insights
+
 1️. Ride Frequency & User Behavior
   - Members take 1.81x more trips than casual riders (3.7M vs. 2.1M trips).
   - Casual riders use electric scooters 2.5x more than members (59.04% vs. 40.96%).
